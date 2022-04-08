@@ -17,4 +17,4 @@ docker-compose up
 
 It will start 2 services:
 - **MongoDB** - on port ```27017```
-- **Redis** - on port ```6379```, the password is ```redispass```
+- **Redis** - on port ```6379```
