@@ -1,0 +1,16 @@
+version: "3.6"
+services:
+  mongodb:
+    image : mongo
+    container_name: mongodb
+    environment:
+    - PUID=1000
+    - PGID=1000
+    ports:
+    - "27017:27017"
+
+  redis:
+    image: "redis:alpine"
+    command: redis-server --requirepass redispass
+    ports:
+    - "6379:6379"
