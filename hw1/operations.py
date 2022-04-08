@@ -90,6 +90,29 @@ def add_company(company_dict,r=None, companies=None):
     r.sadd(companiesSet, company_dict['company_name'])
     print("%s Added successfully!"%(company_name))
 
+# Operation 2 - Add a new job position
+def generate_job_id(companies, company_name):
+    match = {'$match' : {'company_name':company_name}}
+    project = {'$project': { 'count': { '$size':'$jobs_list' }}}
+    res = companies.aggregate([match,project])
+    return list(res)[0]['count'] + 1
+
+def add_job(job_dict, company_name, r=None, companies=None):
+    # ASSUMPTION: there is no option to delete jobs (so counting jobs can be used to generate job id)
+    if r is None:
+        r = connect_to_redis()
+    if companies is None:
+        companies = connect_to_mongo()[current_user].companies
+    if not (is_company_exists(r, companies, company_name)):
+        raise ValueError("company doesn't exist")
+    
+    # generate job id and insert to the company object
+    job_dict['job_id'] = generate_job_id(companies, company_name)
+    job_dict['application_list'] = [] # initiate application list
+    companies.update_one({'company_name': company_name}, {'$push': {'jobs_list': job_dict}}, upsert = True)
+    r.zincrby(ojOSet,1,"%s:%s"%(job_dict['location'],job_dict['job_title']))
+    print("%s Added to %s jobs successfully!"%(job_dict['job_id'], company_name))
+
 
 if __name__ == '__main__':
     # connect to the databases
@@ -104,4 +127,9 @@ if __name__ == '__main__':
     db, companies = setup_mongo(client)
 
     # Operation 1 - Add a new company
-    add_company({'company_name':'TAU', 'company_description':'University'})
+    add_company({'company_name':'TAU', 'company_description':'University'}, r=r, companies=companies)
+
+    # Operation 2 - Add a new job position
+    add_job({'job_title':'bi developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+
+    print(r.zrange(ojOSet, 0, -1))    

@@ -64,7 +64,7 @@ def test_redis_reset():
     # TODO: add test for oj
 
 # Test Operation 1
-def test_successfull_add_company():
+def test_add_company():
     r, _, _, companies = restart()
     add_company({'company_name':'TAU', 'company_description':'University'})
     if (b'TAU' not in r.smembers(companiesSet)):
@@ -80,3 +80,26 @@ def test_duplicate_add_company():
         pytest.fail("two companies with same name added to the db")
     except:
         return True
+
+# Test Operation 2
+def test_generate_job_id():
+    r, _, _, companies = restart()
+    add_company({'company_name':'TAU', 'company_description':'University'})
+    add_job({'job_title':'frontend developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    add_job({'job_title':'backend developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    # get job ids and compare them to [1,2,3]
+    jobs = companies.find_one(
+        { 
+            "company_name": 'TAU',
+            "jobs_list.job_id": 3
+        },
+        { "jobs_list": 1 }
+    )
+    assert(list(i['job_id'] for i in jobs['jobs_list']) == [1,2,3])
+
+def test_add_job():
+    r, _, _, companies = restart()
+    add_company({'company_name':'TAU', 'company_description':'University'})
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    assert(b'Tel Aviv:fullstack developer' in r.zrange(ojOSet, 0, -1))
