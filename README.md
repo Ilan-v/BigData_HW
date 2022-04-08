@@ -18,3 +18,7 @@ docker-compose up
 It will start 2 services:
 - **MongoDB** - on port ```27017```
 - **Redis** - on port ```6379```
+
+### Testing
+```pytest -v``` - all tests
+```pytest -v -m "not slow"``` - all tests except slow ones
