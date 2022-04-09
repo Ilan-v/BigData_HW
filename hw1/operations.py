@@ -113,6 +113,30 @@ def add_job(job_dict, company_name, r=None, companies=None):
     r.zincrby(ojOSet,1,"%s:%s"%(job_dict['location'],job_dict['job_title']))
     print("%s Added to %s jobs successfully!"%(job_dict['job_id'], company_name))
 
+# Operation 3 - Add a new application
+def is_job_open(companies, company_name, job_id):
+    res = companies.find_one(
+        { 
+            "company_name": company_name,
+        },
+        { "jobs_list": { "$elemMatch": { "job_id": int(job_id), "status": "open" }}}
+    )
+    return('jobs_list' in res)
+
+def new_application(candidate, application_time, job_id, company_name, r=None, companies=None):
+    if r is None:
+        r = connect_to_redis()
+    if companies is None:
+        companies = connect_to_mongo()[current_user].companies
+
+    if (not is_job_open(companies, company_name, job_id)):
+        print("you are trying to apply to a closed job")
+        return -1
+
+    #TODO: check email before update
+    #TODO: add application (update)
+
+    
 
 if __name__ == '__main__':
     # connect to the databases
@@ -132,4 +156,19 @@ if __name__ == '__main__':
     # Operation 2 - Add a new job position
     add_job({'job_title':'bi developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
 
-    print(r.zrange(ojOSet, 0, -1))    
+    # Operation 3 - Add a new application
+    new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU', r=r, companies=companies)
+
+    res = companies.find_one(
+        { 
+            "company_name": 'TAU',
+        },
+        { "jobs_list": { "$elemMatch": { "job_id": 1, "status": "open" }}}
+    )
+    '''
+    res = companies.find_one(
+        { 
+            "company_name": 'TAU',
+        })
+    '''
+    print(res)

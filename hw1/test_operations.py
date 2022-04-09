@@ -103,3 +103,30 @@ def test_add_job():
     add_company({'company_name':'TAU', 'company_description':'University'})
     add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
     assert(b'Tel Aviv:fullstack developer' in r.zrange(ojOSet, 0, -1))
+
+# Test Operation 3
+def test_is_job_open():
+    r, _, _, companies = restart()
+    add_company({'company_name':'TAU', 'company_description':'University'})
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    if (not is_job_open(companies, 'TAU', 1)):
+        pytest.fail("open job not marked as open")
+    add_company({'company_name':'IBM', 'company_description':'...'})
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'IBM', r=r, companies=companies)
+    if (not is_job_open(companies, 'TAU', 1)):
+        pytest.fail("open job in a different company affected the results")
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'closed','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    if (is_job_open(companies, 'TAU', 2)):
+        pytest.fail("closed job marked as open")
+
+def test_duplicate_email():
+    r, _, _, companies = restart()
+    add_company({'company_name':'TAU', 'company_description':'University'})
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU')
+    try:
+        new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU')
+        pytest.fail("two application with same email added to the db")
+    except:
+        return True
+
