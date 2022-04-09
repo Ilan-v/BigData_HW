@@ -145,7 +145,7 @@ def new_application(candidate, application_time, job_id, company_name, r=None, c
     if (is_already_submitted(companies, company_name, job_id, candidate['email'])):
         print("you have already sent application for this job")
         return -2
-        
+
     companies.update_one({"company_name": company_name,"jobs_list": {"$elemMatch":{"job_id":int(job_id)}}},{'$push':{'jobs_list.$.application_list':candidate}})
 
     print("{} submited application for job number {} at {}".format(candidate['candidate_name'],job_id, company_name))
@@ -185,11 +185,3 @@ if __name__ == '__main__':
 
     # Operation 4 - Update job status
     update_job_status('TAU','1','close', r=r, companies=companies)
-
-    res = companies.find_one(
-        { 
-            "company_name": 'TAU',
-        },
-        { "jobs_list": { "$elemMatch": { "job_id": 1, "application_list": {"$elemMatch": {'email':'laura@gmail.com'}} }}}
-    )
-    print(res)
