@@ -123,6 +123,15 @@ def is_job_open(companies, company_name, job_id):
     )
     return('jobs_list' in res)
 
+def is_already_submitted(companies, company_name, job_id, email):
+    res = companies.find_one(
+        { 
+            "company_name": company_name,
+        },
+        { "jobs_list": { "$elemMatch": { "job_id": int(job_id), "application_list": {"$elemMatch": {'email':email}} }}}
+    )
+    return('jobs_list' in res) # if mail doesn't exists an empty object will returned
+
 def new_application(candidate, application_time, job_id, company_name, r=None, companies=None):
     if r is None:
         r = connect_to_redis()
@@ -133,8 +142,23 @@ def new_application(candidate, application_time, job_id, company_name, r=None, c
         print("you are trying to apply to a closed job")
         return -1
 
-    #TODO: check email before update
-    #TODO: add application (update)
+    if (is_already_submitted(companies, company_name, job_id, candidate['email'])):
+        print("you have already sent application for this job")
+        return -2
+        
+    companies.update_one({"company_name": company_name,"jobs_list": {"$elemMatch":{"job_id":int(job_id)}}},{'$push':{'jobs_list.$.application_list':candidate}})
+
+    print("{} submited application for job number {} at {}".format(candidate['candidate_name'],job_id, company_name))
+
+def update_job_status(company_name, job_id, new_status, r=None, companies=None):
+    #TODO: update open jobs on redis
+    if r is None:
+        r = connect_to_redis()
+    if companies is None:
+        companies = connect_to_mongo()[current_user].companies
+    
+    companies.update_one({"company_name": company_name,"jobs_list": {"$elemMatch":{"job_id":int(job_id)}}},{'$set':{'jobs_list.$.status':new_status}})
+    print("job number: {} at {} is now: {}".format(job_id, company_name, new_status))
 
     
 
@@ -159,16 +183,13 @@ if __name__ == '__main__':
     # Operation 3 - Add a new application
     new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU', r=r, companies=companies)
 
+    # Operation 4 - Update job status
+    update_job_status('TAU','1','close', r=r, companies=companies)
+
     res = companies.find_one(
         { 
             "company_name": 'TAU',
         },
-        { "jobs_list": { "$elemMatch": { "job_id": 1, "status": "open" }}}
+        { "jobs_list": { "$elemMatch": { "job_id": 1, "application_list": {"$elemMatch": {'email':'laura@gmail.com'}} }}}
     )
-    '''
-    res = companies.find_one(
-        { 
-            "company_name": 'TAU',
-        })
-    '''
     print(res)

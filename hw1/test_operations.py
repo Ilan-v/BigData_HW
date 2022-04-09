@@ -124,9 +124,23 @@ def test_duplicate_email():
     add_company({'company_name':'TAU', 'company_description':'University'})
     add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
     new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU')
-    try:
-        new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU')
+    a = new_application({'candidate_name':'laura', 'email':'laura@gmail.com','linkedin':'https://www.linkedin.com/in/laura/', 'skills': ['python','sql']},'01-02-2020 15:00:00', '1','TAU')
+    if a is not -2:
         pytest.fail("two application with same email added to the db")
-    except:
+    else:
         return True
+
+
+# Test Operation 4
+def test_update_job_status():
+    r, _, _, companies = restart()
+    add_company({'company_name':'TAU', 'company_description':'University'})
+    add_job({'job_title':'fullstack developer', 'location': 'Tel Aviv','requirements':['python','big data','mongodb'],'status':'open','publish_date':'01-02-2020'},'TAU', r=r, companies=companies)
+    update_job_status('TAU','1','close', r=r, companies=companies)
+    if (is_job_open(companies, 'TAU', 1)):
+        pytest.fail("job status doesn't changed")
+    update_job_status('TAU','1','open', r=r, companies=companies)
+    if (not is_job_open(companies, 'TAU', 1)):
+        pytest.fail("job status doesn't changed to open again")
+
 
